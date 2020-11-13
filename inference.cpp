@@ -77,6 +77,8 @@ int main(int argc, const char * argv[]){
         }
     }
 
+    myFile.close();
+
     map<string, int> degreeMap;
     for(auto x: ASREL){
         degreeMap[x.first] = x.second.size();

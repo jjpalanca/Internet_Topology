@@ -2,47 +2,37 @@
 
 using namespace std;
 
-unordered_map<string, unordered_map<string, vector<string>>> AS2ORG;
+unordered_map<string, vector<string>> ASREL;
 
-bool orgExists(string org_name){
-    // return AS2ORG.contains(org_name);
-    bool found = false;
-    for(auto x : AS2ORG){
-        if(x.first.compare(org_name)==0){
+bool asKeyExist(string key){
+    for(auto x: ASREL){
+        if (x.first.compare(key)==0){
             return true;
         }
     }
-    return found;
+    return false;
 }
 
-bool orgIDExists(string org_id){
-    bool found = false;
-    for(auto x : AS2ORG){
-        for (auto id: x.second){
-            if (id.first.compare(org_id) == 0){
-                return true;
-            }
-        }
-    }
-    return found;
+bool cmp(pair<string, int>& a, pair<string, int>& b){
+    return a.second > b.second;
 }
 
-void addAStoORG(string asn, string org_id){
-    for (auto orgs: AS2ORG){
-        for (auto id: orgs.second){
-            if (id.first.compare(org_id)==0){
-                AS2ORG[orgs.first][id.first].push_back(asn);
-                return;
-            }
+bool isConnected(string as, vector<string> ases){
+
+    for (auto x: ases){
+        if (find(ASREL[x].begin(), ASREL[x].end(), as) == ASREL[x].end()){
+            return false;
         }
     }
+    
+    return true;
 }
 
 int main(int argc, const char * argv[]){
 
     ifstream myFile;
     myFile.open(argv[1]);
-
+    vector<string> setR;
 
     if (myFile){
         string line;
@@ -67,45 +57,62 @@ int main(int argc, const char * argv[]){
                 line.erase(0, pos + delim.length());
             } while(pos != string::npos);
 
-            if (lineSplit.size() == 5){         // ORG fields
-                if (!orgExists(lineSplit[2])){
-                    unordered_map<string, vector<string>> org_id;
-                    vector<string> ASes;
-                    string id = lineSplit[0];
-                    string org = lineSplit[2];
-                    org_id[id] = ASes;
-                    AS2ORG[org] = org_id; 
-                } 
-                // for (auto x: lineSplit){
-                //     cout << x << " ";
-                // }
-                // cout << "\n";
-            } else if(lineSplit.size() == 6){           // AS fields
-                // exit(0);
-                if (orgIDExists(lineSplit[3])){
-                    // cout << "org exist" << endl;
-                    string asn = lineSplit[0];
-                    string org_id = lineSplit[3];
-                    addAStoORG(asn, org_id);
-                }
+            if (ASREL.find(lineSplit[0])!=ASREL.end()){ // if it's in the map
+                string key = lineSplit[0];
+                ASREL[key].push_back(lineSplit[1]);
+            } else{
+                vector<string> val{lineSplit[1]};
+                string key = lineSplit[0];
+                ASREL[key] = val;
             }
-        }
-        for (auto org: AS2ORG){
-            cout << "{ "<< org.first << ": ";
-            for (auto id: org.second){
-                cout << "{ " << id.first << ": <";
-                for (auto x: id.second){
-                    cout << x << ", ";
-                }
-                cout << "> }";
+            if(ASREL.find(lineSplit[1])!=ASREL.end()){
+                string key = lineSplit[1];
+                ASREL[key].push_back(lineSplit[0]);
+            } else{
+                vector<string> val{lineSplit[0]};
+                string key = lineSplit[1];
+                ASREL[key] = val;
             }
-            cout << " }\n";
+            
         }
-
-    } else{
-        cout << "File not found!" << endl;
     }
 
+    map<string, int> degreeMap;
+    for(auto x: ASREL){
+        degreeMap[x.first] = x.second.size();
+    }
+
+    vector<pair<string, int>> sortedASDegree;
+    for (auto x: degreeMap){
+        // 
+        sortedASDegree.push_back(x);
+    }
+
+    sort(sortedASDegree.begin(), sortedASDegree.end(), cmp);
+
+    vector<string> clique;
+    int i = 0;
+    for (auto as: sortedASDegree){
+        if (i == 0){
+            clique.push_back(as.first);
+        } else{
+            if (isConnected(as.first, clique)){
+                clique.push_back(as.first);
+            }
+        }
+        i++;
+    }
+
+    int itr = 0;
+    cout << "First 10 ASes of the clique:" << endl;
+    for(auto x: clique){
+        if (itr == 10){
+            exit(0);
+        }
+        cout << x << endl;
+        itr++;
+    }
 
     return 0;
 }
+

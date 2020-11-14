@@ -105,6 +105,8 @@ int main(int argc, const char * argv[]){
         i++;
     }
 
+    cout << "Size of the clique: " << clique.size() << endl;
+
     int itr = 0;
     cout << "First 10 ASes of the clique:" << endl;
     for(auto x: clique){
